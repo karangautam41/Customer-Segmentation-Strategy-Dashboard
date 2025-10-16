@@ -1,3 +1,4 @@
+#import required libraries
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -14,17 +15,14 @@ import joblib
 import logging
 from typing import Tuple, Union, Optional
 
-# --- Setup Basic Logging ---
+# Setup Basic Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# --- [FIX 1] Create an absolute path to the data file ---
 # This ensures the script can find the CSV regardless of where you run it from.
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
-#======================================================================
-# SECTION 1: MACHINE LEARNING PIPELINE
-#======================================================================
 
+# SECTION 1: MACHINE LEARNING PIPELINE
 class PipelineConfig:
     """Configuration class for pipeline artifacts and paths."""
     # Use the script_dir variable to create a robust, absolute path
@@ -63,7 +61,7 @@ class SegmentationPipeline:
             st.error(f"Error: The data file '{self.config.DATA_FILE_PATH}' was not found. Please ensure it's in the same directory as the app.")
             raise
         
-        # --- [NEW] Data Cleaning: Drop non-numeric and identifier columns ---
+        # Data Cleaning: Drop non-numeric and identifier columns
         # These columns are categorical or IDs and are not suitable for this clustering model.
         cols_to_drop = [
             'CLIENTNUM', 'Attrition_Flag', 'Gender', 'Education_Level', 
@@ -82,7 +80,7 @@ class SegmentationPipeline:
         self.imputer = SimpleImputer(strategy='mean')
         df_imputed = pd.DataFrame(self.imputer.fit_transform(df_numeric), columns=self.numeric_columns)
         
-        # --- [FIX 2] Updated Feature Engineering for the new dataset ---
+        #Updated Feature Engineering for the new dataset
         logging.info("Performing feature engineering tailored to the dataset...")
         
         # Use a small constant to avoid division by zero
@@ -182,9 +180,8 @@ class SegmentationPipeline:
             joblib.dump(self.reducer, self.config.PCA_PATH)
         logging.info("Artifacts saved successfully.")
 
-#======================================================================
+
 # SECTION 2: STREAMLIT APPLICATION
-#======================================================================
 
 st.set_page_config(layout="wide", page_title="Customer Segmentation Dashboard")
 
@@ -198,7 +195,7 @@ This dashboard allows you to explore customer segments from credit card data.
 - **Analyze:** View detailed profiles and actionable recommendations for each segment.
 """)
 
-# --- Data Preview Section ---
+# Data Preview Section
 st.header("Data Preview and Schema")
 with st.expander("Click to view the raw data and column descriptions"):
     try:
@@ -214,7 +211,7 @@ with st.expander("Click to view the raw data and column descriptions"):
     except Exception as e:
         st.error(f"An error occurred while loading the data preview: {e}")
 
-# --- Sidebar Controls ---
+# Sidebar Controls
 st.sidebar.header("Dashboard Controls")
 reduction_method = st.sidebar.selectbox("1. Select Dimensionality Reduction Method", ('PCA', 'Autoencoder'))
 num_clusters = st.sidebar.slider("2. Select Number of Clusters", min_value=2, max_value=10, value=4, step=1)
@@ -223,7 +220,7 @@ force_retrain = st.sidebar.checkbox("Force model retraining", value=False)
 if force_retrain:
     st.sidebar.warning("Forcing a retrain will re-run the entire ML pipeline and may take a few minutes, especially for the Autoencoder.")
 
-# --- Caching the pipeline run ---
+# Caching the pipeline run
 @st.cache_data(show_spinner="Running the segmentation pipeline...")
 def run_segmentation(method, n_clusters, retrain_trigger):
     """Function to run the ML pipeline."""
@@ -251,7 +248,7 @@ def run_segmentation(method, n_clusters, retrain_trigger):
 
     return df_final, df_plot, score
 
-# --- Main Dashboard Area ---
+# Main Dashboard Area
 st.header("Segmentation Analysis")
 
 if st.sidebar.button("Run Analysis"):
